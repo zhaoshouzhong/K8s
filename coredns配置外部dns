@@ -1,0 +1,5 @@
+coredns 作为k8s的标配内部dns服务，用来给容器配置域名。
+如果想访问外部的域名服务，比如访问集群外的一个test.xxx.com的域名服务（由dns server A 来完成解析），如何配置呢？
+答案很简单，就是直接修改物理机的 /etc/resolv.conf 文件，把对应的dns A 配置上即可。
+
+coredns通过复制主机的/etc/resolv.conf 来实现外部域名的解析。
