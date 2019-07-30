@@ -1,5 +1,7 @@
 # 理解k8s的crd，controller定制原理，参考：
 
+https://itnext.io/how-to-create-a-kubernetes-custom-controller-using-client-go-f36a7a7536cc
+
 https://medium.com/@trstringer/create-kubernetes-controllers-for-core-and-custom-resources-62fc35ad64a3
 
 # 环境初始化
