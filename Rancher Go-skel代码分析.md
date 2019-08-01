@@ -444,7 +444,71 @@ export https_proxy="http://172.xx.xx.52:1080"
 
 ```
 - 为了方便调测，减少build时间，可以考虑调整如下：
-
 1：所有脚本打开 set -x 
+
 2：scripts/ci 脚本可以考虑去掉 ./test  ./validate  ./validate-ci  这三条指令。
 
+# 生成样例代码：
+```
+export GOPROXY=https://goproxy.io
+export http_proxy="http://172.xx.xx.52:1080"
+export https_proxy="http://172.xx.xx.52:1080"
+
+./skel.sh github.com/rancher/test123
+```
+成功后，在生成一个test123目录，可执行程序唯一该目录下的bin目录下。
+# 定义CRD文件
+定义crd文件：
+```
+# cat crd.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: foos.mytest.api.group
+spec:
+  group: mytest.api.group
+  version: v1
+  names:
+    kind: Foo
+    plural: foos
+  scope: Namespaced
+```
+```
+kubectl apply -f crd.yaml
+```
+启动test123程序，可以看到类似如下信息：
+```
+time="2019-07-31T15:57:20+08:00" level=info msg="Starting controller"
+time="2019-07-31T15:57:20+08:00" level=info msg="Starting yingzi.api.group/v1, Kind=Foo controller"
+```
+备注：必须先创建crd文件，否则会报错
+
+创建crd实例：
+```
+cat example.yaml
+apiVersion: mytest.api.group/v1
+kind: Foo
+metadata:
+  name: example-foo
+spec:
+  message: hello world
+  someValue: 13
+
+```
+```
+kubectl apply -f example.yaml
+```
+可以看到controller日志：
+```
+2019/07/31 15:57:33 OnFooChange:default/example-foo
+2019/07/31 15:57:33 OnFooChange:default/example-foo
+```
+删除实例：
+```
+kubectl delete -f example.yaml
+```
+对应controller日志：
+```
+019/07/31 15:57:40 OnFooChange:default/example-foo
+2019/07/31 15:57:40 OnFooRemove:default/example-foo
+```
