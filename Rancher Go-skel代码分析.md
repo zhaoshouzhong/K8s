@@ -207,6 +207,7 @@ func (c *Controller) OnFooRemove(key string, foo *v1.Foo) (*v1.Foo, error) {
 代码默认的crd属性只有一个属性：Option，默认的api组为some.api.group。这显然不能满足我们需要，需要需要变更如下：
 - Foo属性为：Message   string `json:"message"` ; SomeValue *int32 `json:"someValue"` 两个属性
 - api组为 mytest.api.group
+
 需要改动的代码点如下：
 - pkg/apis/yingzi.api.group/v1/types.go：
 ```
@@ -349,6 +350,7 @@ func (c *Controller) OnFooRemove(key string, foo *v1.Foo) (*v1.Foo, error) {
         //make changes to fooCopy
         return c.foos.Update(fooCopy)
 }
+```
 ===> 调整为：
 ```
 func (c *Controller) OnFooChange(key string, foo *v1.Foo) (*v1.Foo, error) {
@@ -389,3 +391,60 @@ import (
 )
 
 ```
+- scripts/build
+```
+#!/bin/bash
+set -x
+
+source $(dirname $0)/version
+
+cd $(dirname $0)/..
+
+mkdir -p bin
+if [ "$(uname)" = "Linux" ]; then
+    OTHER_LINKFLAGS="-extldflags -static -s"
+fi
+###新增如下代理配置，这样go get可以翻墙拉包了
+export http_proxy="http://172.xx.xx.52:1080"
+export https_proxy="http://172.xx.xx.52:1080"
+```
+- scripts/validate
+```
+#!/bin/bash
+set -e
+
+cd $(dirname $0)/..
+
+echo Running validation
+
+PACKAGES="$(go list ./...)"
+
+if ! command -v golangci-lint; then
+    echo Skipping validation: no golangci-lint available
+    exit
+fi
+set -x
+echo Running validation
+
+###新增如下代理配置，这样go get可以翻墙拉包了
+export http_proxy="http://172.xx.xx.52:1080"
+export https_proxy="http://172.xx.xx.52:1080"
+
+```
+- scripts/validate-ci
+```
+#!/bin/bash
+set -x
+
+cd $(dirname $0)/..
+
+###新增如下代理配置，这样go get可以翻墙拉包了
+export http_proxy="http://172.xx.xx.52:1080"
+export https_proxy="http://172.xx.xx.52:1080"
+
+```
+- 为了方便调测，减少build时间，可以考虑调整如下：
+
+1：所有脚本打开 set -x 
+2：scripts/ci 脚本可以考虑去掉 ./test  ./validate  ./validate-ci  这三条指令。
+
