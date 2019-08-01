@@ -121,7 +121,7 @@ import (
         "os"
 )
 ```
-scripts目录：时间的编译和构建脚本
+scripts目录：编译和构建脚本
 ```
 # ll scripts/
 total 44
