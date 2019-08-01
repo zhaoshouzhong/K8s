@@ -124,8 +124,8 @@ tree tree --charset ASCII  $GOPATH/src/$ROOT_PACKAGE/pkg/client
 # 桩代码生成
 go get时需要翻墙才能下载一些包，因此，需要设置本地代理(ip：端口号为我本地主机的代理，根据实际情况进行替换)：
 ```
-export http_proxy="http://172.19.68.52:1080"
-export https_proxy="http://172.19.68.52:1080"
+export http_proxy="http://172.xx.xx.52:1080"
+export https_proxy="http://172.xx.xx.52:1080"
 ```
 运行gen.sh,出现错误。原来是缺少依赖的包
 ```
