@@ -159,3 +159,233 @@ type FooSpec struct {
         Option bool `json:"option"` ##定义了一个Option属性
 }
 ```
+pkg/foo/controller.go: controller类，定义对crd的处理
+```
+# cat pkg/foo/controller.go: controller
+package foo
+
+import (
+        "context"
+        v1 "%PKG%/pkg/apis/some.api.group/v1"  ##%PKG%为需要替换的变量
+        foocontroller "%PKG%/pkg/generated/controllers/some.api.group/v1"
+)
+
+type Controller struct {
+        foos foocontroller.FooController
+}
+
+func Register(
+        ctx context.Context,
+        foos foocontroller.FooController) {
+
+        controller := &Controller{
+                foos: foos,
+        }
+
+        foos.OnChange(ctx, "foo-handler", controller.OnFooChange)
+        foos.OnRemove(ctx, "foo-handler", controller.OnFooRemove)
+}
+##OnFooChange响应对象的创建，修改操作。不过这个方法有问题。后面会讲到
+func (c *Controller) OnFooChange(key string, foo *v1.Foo) (*v1.Foo, error) {
+        //change logic, return original foo if no changes
+
+        fooCopy := foo.DeepCopy()
+        //make changes to fooCopy
+        return c.foos.Update(fooCopy)
+}
+##OnFooRemove 响应对象的删除操作。这个方法也是有问题的，后面会讲到
+func (c *Controller) OnFooRemove(key string, foo *v1.Foo) (*v1.Foo, error) {
+        //remove logic, return original foo if no changes
+
+        fooCopy := foo.DeepCopy()
+        //make changes to fooCopy
+        return c.foos.Update(fooCopy)
+}
+
+```
+# 定制CRD属性和api组
+代码默认的crd属性只有一个属性：Option，默认的api组为some.api.group。这显然不能满足我们需要，需要需要变更如下：
+- Foo属性为：Message   string `json:"message"` ; SomeValue *int32 `json:"someValue"` 两个属性
+- api组为 mytest.api.group
+需要改动的代码点如下：
+- pkg/apis/yingzi.api.group/v1/types.go：
+```
+type FooSpec struct {
+        //Option bool `json:"option"`
+        Message   string `json:"message"`
+        SomeValue *int32 `json:"someValue"`
+}
+```
+- main.go:
+```
+import (
+        "context"
+        "flag"
+        "fmt"
+        "%PKG%/pkg/foo"
+        "%PKG%/pkg/generated/controllers/some.api.group" ==> "%PKG%/pkg/generated/controllers/mytest.api.group"
+        "github.com/rancher/wrangler/pkg/resolvehome"
+        "github.com/rancher/wrangler/pkg/signals"
+        "github.com/rancher/wrangler/pkg/start"
+        "github.com/sirupsen/logrus"
+        "github.com/urfave/cli"
+        "k8s.io/client-go/tools/clientcmd"
+        "os"
+)
+```
+```
+func run(c *cli.Context) {
+        flag.Parse()
+
+        logrus.Info("Starting controller")
+        ctx := signals.SetupSignalHandler(context.Background())
+
+        kubeconfig, err := resolvehome.Resolve(c.String("kubeconfig"))
+        if err != nil {
+                logrus.Fatalf("Error resolving home dir: %s", err.Error())
+        }
+        masterurl := c.String("masterurl")
+
+        cfg, err := clientcmd.BuildConfigFromFlags(masterurl, kubeconfig)
+        if err != nil {
+                logrus.Fatalf("Error building kubeconfig: %s", err.Error())
+        }
+
+        foos, err := some.NewFactoryFromConfig(cfg)===>foos, err := mytest.NewFactoryFromConfig(cfg)
+        if err != nil {
+                logrus.Fatalf("Error building sample controllers: %s", err.Error())
+        }
+
+        foo.Register(ctx, foos.Some().V1().Foo())===>foo.Register(ctx, foos.Mytest().V1().Foo())
+
+        if err := start.All(ctx, 2, foos); err != nil {
+                logrus.Fatalf("Error starting: %s", err.Error())
+        }
+
+        <-ctx.Done()
+}
+```
+- skel.sh
+```
+FILES="
+./Dockerfile.dapper
+./.dockerignore
+./.golangci.json
+./.drone.yml
+./.gitignore
+./LICENSE
+./main.go
+./Makefile
+./package/Dockerfile
+./README.md.in
+./scripts/boilerplate.go.txt
+./scripts/build
+./scripts/ci
+./scripts/entry
+./scripts/package
+./scripts/release
+./scripts/test
+./scripts/validate
+./scripts/validate-ci
+./scripts/version
+./pkg/apis/some.api.group/v1/types.go ===>./pkg/apis/mytest.api.group/v1/types.go
+./pkg/codegen/cleanup/main.go
+./pkg/codegen/main.go
+./pkg/foo/controller.go
+./pkg/foo/controller_test.go
+./go.mod
+"
+```
+- pkg/apis/some.api.group目录改为 pkg/apis/mytest.api.group
+- pkg/codegen/main.go
+```
+package main
+
+import (
+        "os"
+        "%PKG%/pkg/apis/some.api.group/v1" ===>"%PKG%/pkg/apis/mytest.api.group/v1"
+        "github.com/rancher/wrangler/pkg/controller-gen"
+        "github.com/rancher/wrangler/pkg/controller-gen/args"
+)
+
+func main() {
+        os.Unsetenv("GOPATH")
+        controllergen.Run(args.Options{
+                OutputPackage: "%PKG%/pkg/generated",
+                Boilerplate:   "scripts/boilerplate.go.txt",
+                Groups: map[string]args.Group{
+                        "some.api.group": { ===> "mytest.api.group":
+                                Types: []interface{}{
+                                        v1.Foo{},
+                                },
+                                GenerateTypes: true,
+                        },
+                },
+        })
+}
+```
+- pkg/foo/controller.go
+```
+
+import (
+        "context"
+        v1 "%PKG%/pkg/apis/some.api.group/v1" ===>v1 "%PKG%/pkg/apis/mytest.api.group/v1"
+        foocontroller "%PKG%/pkg/generated/controllers/some.api.group/v1" ===>foocontroller "%PKG%/pkg/generated/controllers/mytest.api.group/v1"
+)
+```
+```
+func (c *Controller) OnFooChange(key string, foo *v1.Foo) (*v1.Foo, error) {
+        //change logic, return original foo if no changes
+
+        fooCopy := foo.DeepCopy()
+        //make changes to fooCopy
+        return c.foos.Update(fooCopy)
+}
+
+func (c *Controller) OnFooRemove(key string, foo *v1.Foo) (*v1.Foo, error) {
+        //remove logic, return original foo if no changes
+
+        fooCopy := foo.DeepCopy()
+        //make changes to fooCopy
+        return c.foos.Update(fooCopy)
+}
+===> 调整为：
+```
+func (c *Controller) OnFooChange(key string, foo *v1.Foo) (*v1.Foo, error) {
+	//change logic, return original foo if no changes
+
+	fooCopy := foo.DeepCopy()
+	if (fooCopy == nil ) {
+
+		return nil,nil
+	}
+	//make changes to fooCopy
+	log.Println("OnFooChange:" + key)
+	return c.foos.Update(fooCopy)
+
+}
+
+func (c *Controller) OnFooRemove(key string, foo *v1.Foo) (*v1.Foo, error) {
+	//remove logic, return original foo if no changes
+
+	fooCopy := foo.DeepCopy()
+	if (fooCopy == nil ) {
+
+		return nil,nil
+	}
+	//make changes to fooCopy
+	log.Println("OnFooRemove:" + key)
+	return c.foos.Update(fooCopy)
+
+}
+```
+- pkg/foo/controller_test.go
+```
+import (
+        "%PKG%/pkg/apis/some.api.group/v1" ===> %PKG%/pkg/apis/mytest.api.group/v1"
+        fooFakes "%PKG%/pkg/generated/controllers/some.api.group/v1/fakes"===>fooFakes "%PKG%/pkg/generated/controllers/mytest.api.group/v1/fakes"
+        "github.com/stretchr/testify/assert"
+        "testing"
+)
+
+```
