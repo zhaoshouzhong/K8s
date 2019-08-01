@@ -1,5 +1,6 @@
 # 前言
 基于k8s的go-client定制crd，controller还是有些麻烦的，为了解决这个问题，rancher团队开发了go-skel代码框架，可以相对比较容易的基于k8s定制crd，controller。
+
 go-skel官方简介：Skeleton for Rancher Go Microservices。很简单的一句话，掌握rancher的代码架构，必须要先理解go-skel。
 
 https://github.com/rancher/go-skel
@@ -509,6 +510,6 @@ kubectl delete -f example.yaml
 ```
 对应controller日志：
 ```
-019/07/31 15:57:40 OnFooChange:default/example-foo
+2019/07/31 15:57:40 OnFooChange:default/example-foo
 2019/07/31 15:57:40 OnFooRemove:default/example-foo
 ```
