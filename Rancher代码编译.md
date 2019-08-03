@@ -178,7 +178,7 @@ REPO=${REPO:-rancher}
 if echo $TAG | grep -q dirty; then
     TAG=dev
 else
-    TAG=yz-v2.2.2 ###这个是定制的部分，因为默认情况下会是空，但是build失败
+    TAG=yz-v2.2.2 ###这个是定制的部分，因为默认情况下会是空，导致build失败
 fi
 
 if [ -n "$DRONE_TAG" ]; then
