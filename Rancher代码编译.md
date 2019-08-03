@@ -78,7 +78,8 @@ FROM ubuntu:18.04
 ENV HOST_ARCH=amd64  ARCH=amd64
 ENV CATTLE_HELM_VERSION v2.10.0-rancher10
 
-ENV http_proxy=http://172.xx.xx.108:1080 ##注意设置代理，否则下载包会出问题
+# 注意设置代理，否则下载包会出问题
+ENV http_proxy=http://172.xx.xx.108:1080 
 ENV https_proxy=http://172.xx.xx.108:1080
 
 RUN apt-get update && \
@@ -177,8 +178,6 @@ REPO=${REPO:-rancher}
 
 if echo $TAG | grep -q dirty; then
     TAG=dev
-else
-    TAG=yz-v2.2.2 ###这个是定制的部分，因为默认情况下会是空，导致build失败
 fi
 
 if [ -n "$DRONE_TAG" ]; then
@@ -242,13 +241,14 @@ ENV LOGLEVEL_VERSION v0.1.2
 ENV TINI_VERSION v0.18.0
 ENV TELEMETRY_VERSION v0.5.3
 
-ENV http_proxy=http://192.168.1.106:1080 #增加代理设置
-ENV https_proxy=http://192.168.1.106:1080 #增加代理设置
+# 增加代理设置
+ENV http_proxy=http://192.168.1.106:1080 
+ENV https_proxy=http://192.168.1.106:1080 
 
 .......... 省略
-
-ENV http_proxy="" #取消代理设置
-ENV https_proxy=""#取消代理设置
+# 取消代理设置
+ENV http_proxy="" 
+ENV https_proxy=""
 
 
 ENV SSL_CERT_DIR /etc/rancher/ssl
@@ -269,7 +269,7 @@ cd $(dirname $0)
 ./build
 #./test
 ./package
-#./chart/ci
+./chart/ci
 
 ```
 # 执行构建
@@ -281,15 +281,16 @@ cd $(dirname $0)
 构建生成后，会生成对应的image
 ```
 # docker images
-REPOSITORY                                            TAG                 IMAGE ID            CREATED             SIZE
-rancher/rancher-agent                                 yz-v2.2.2           71796d7fb30b        5 hours ago         298MB
-rancher/rancher                                       yz-v2.2.2           f84b61b20a22        6 hours ago         472MB
-rancher                                               OZoUfGm             ca6404ddb801        6 hours ago         1.48GB
-rancher                                               build.v2.2.2        83eccea8b9ea        26 hours ago        1.41GB
+REPOSITORY                                            TAG                 IMAGE ID            CREATED              SIZE
+rancher/rancher-agent                                 dev                 17bdc51e98a7        About a minute ago   298MB
+rancher/rancher                                       dev                 54f2e4c2a984        About a minute ago   472MB
+rancher                                               HEAD                9f5dbc019dbe        10 minutes ago       1.55GB
+rancher                                               OZoUfGm             ca6404ddb801        6 hours ago          1.48GB
+rancher                                               build.v2.2.2        83eccea8b9ea        27 hours ago         1.41GB
 
 ```
 # 启动rancher server
 ```
-docker run --rm -it -p 80:80 -p 443:443 rancher/rancher:yz-v2.2.2
+docker run --rm -it -p 80:80 -p 443:443 rancher/rancher:dev
 ```
 浏览器打开就可以看到rancher的管理页面了。
