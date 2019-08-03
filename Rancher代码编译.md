@@ -288,6 +288,20 @@ rancher                                               HEAD                9f5dbc
 rancher                                               OZoUfGm             ca6404ddb801        6 hours ago          1.48GB
 rancher                                               build.v2.2.2        83eccea8b9ea        27 hours ago         1.41GB
 
+# ll bin
+total 169136
+-rwxr-xr-x 1 root root  65777760 Aug  3 18:33 agent
+drwxr-xr-x 3 root root        17 Aug  3 18:36 chart
+-rwxr-xr-x 1 root root 107376000 Aug  3 18:33 rancher
+-rwxr-xr-x 1 root root      2449 Aug  3 18:36 rancher-images.txt
+-rwxr-xr-x 1 root root       646 Aug  3 18:36 rancher-load-images.ps1
+-rwxr-xr-x 1 root root      1165 Aug  3 18:36 rancher-load-images.sh
+-rwxr-xr-x 1 root root       544 Aug  3 18:36 rancher-mirror-to-rancher-org.ps1
+-rwxr-xr-x 1 root root      8044 Aug  3 18:36 rancher-mirror-to-rancher-org.sh
+-rwxr-xr-x 1 root root       391 Aug  3 18:36 rancher-save-images.ps1
+-rwxr-xr-x 1 root root       785 Aug  3 18:36 rancher-save-images.sh
+-rwxr-xr-x 1 root root       424 Aug  3 18:36 rancher-windows-images.txt
+
 ```
 # 启动rancher server
 ```
