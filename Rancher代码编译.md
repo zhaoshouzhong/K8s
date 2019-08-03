@@ -150,3 +150,146 @@ WORKDIR ${DAPPER_SOURCE}
 ENTRYPOINT ["./scripts/entry"]
 CMD ["ci"]
 ```
+# 调整image生成Dockerfile
+build 动作：包括server端代码，agent代码的构建
+```
+# ll scripts/build*
+-rwxr-xr-x 1 root root 172 Aug  2 16:46 scripts/build
+-rwxr-xr-x 1 root root 361 Aug  2 16:46 scripts/build-agent
+-rwxr-xr-x 1 root root 763 Aug  2 16:46 scripts/build-server
+```
+
+分析scripts下的脚本，package脚本
+```
+# cat scripts/package
+#!/bin/bash
+set -e
+source $(dirname $0)/version
+
+ARCH=${ARCH:-"amd64"}
+SUFFIX=""
+[ "${ARCH}" != "amd64" ] && SUFFIX="_${ARCH}"
+
+cd $(dirname $0)/../package ###这步是进入package目录下
+
+TAG=${TAG:-${VERSION}${SUFFIX}}
+REPO=${REPO:-rancher}
+
+if echo $TAG | grep -q dirty; then
+    TAG=dev
+else
+    TAG=yz-v2.2.2 ###这个是定制的部分，因为默认情况下会是空，但是build失败
+fi
+
+if [ -n "$DRONE_TAG" ]; then
+    TAG=$DRONE_TAG
+fi
+
+cp ../bin/rancher ../bin/agent .
+
+IMAGE=${REPO}/rancher:${TAG}
+AGENT_IMAGE=${REPO}/rancher-agent:${TAG}
+
+if [ ${ARCH} == arm64 ]; then
+    sed -i -e '$a\' -e 'ENV ETCD_UNSUPPORTED_ARCH=arm64' Dockerfile
+fi
+
+docker build --build-arg VERSION=${TAG} --build-arg ARCH=${ARCH} -t ${IMAGE} .  ###执行构建rancher-server image
+docker build --build-arg VERSION=${TAG} --build-arg ARCH=${ARCH} -t ${AGENT_IMAGE} -f Dockerfile.agent . ###执行构建rancher agent image
+echo ${IMAGE} > ../dist/images
+echo ${AGENT_IMAGE} >> ../dist/images
+echo Built ${IMAGE}
+echo Built ${AGENT_IMAGE} # 默认是不显示的
+echo
+
+cd ../bin
+mkdir -p /tmp/system-charts && git clone --branch master https://github.com/rancher/system-charts /tmp/system-charts
+TAG=$TAG REPO=${REPO} go run ../pkg/image/export/main.go /tmp/system-charts $IMAGE $AGENT_IMAGE
+```
+调整dockerfile,分为server和agent的的dockerfile
+```
+# ll
+total 36
+-rw-r--r-- 1 root root 3982 Aug  2 19:40 Dockerfile
+-rw-r--r-- 1 root root 1809 Aug  2 19:41 Dockerfile.agent
+-rw-r--r-- 1 root root  283 Apr 17 04:17 entrypoint.sh
+-rwxr-xr-x 1 root root  385 Apr 17 04:17 kubectl-shell.sh
+-rwxr-xr-x 1 root root 8479 Apr 17 04:17 run.sh
+-rwxr-xr-x 1 root root  420 Apr 17 04:17 share-root.sh
+-rwxr-xr-x 1 root root 1366 Apr 17 04:17 shell-setup.sh
+drwxr-xr-x 2 root root  148 Apr 17 04:17 windows
+```
+主要是增加代理，两个文件都需要处理。示例如下：
+```
+# cat Dockerfile
+FROM ubuntu:18.04
+RUN apt-get update && apt-get install -y git curl ca-certificates unzip xz-utils && \
+    useradd rancher && \
+    mkdir -p /var/lib/rancher/etcd /var/lib/cattle && \
+    chown -R rancher /var/lib/rancher /var/lib/cattle /usr/local/bin
+RUN mkdir /root/.kube && \
+    ln -s /usr/bin/rancher /usr/bin/kubectl && \
+    ln -s /var/lib/rancher/management-state/cred/kubeconfig.yaml /root/.kube/config && \
+    ln -s /usr/bin/rancher /usr/bin/reset-password && \
+    ln -s /usr/bin/rancher /usr/bin/ensure-default-admin && \
+    rm -f /bin/sh && ln -s /bin/bash /bin/sh
+WORKDIR /var/lib/rancher
+
+ARG ARCH=amd64
+ENV CATTLE_HELM_VERSION v2.10.0-rancher10
+ENV CATTLE_MACHINE_VERSION v0.15.0-rancher6-1
+ENV LOGLEVEL_VERSION v0.1.2
+ENV TINI_VERSION v0.18.0
+ENV TELEMETRY_VERSION v0.5.3
+
+ENV http_proxy=http://192.168.1.106:1080 #增加代理设置
+ENV https_proxy=http://192.168.1.106:1080 #增加代理设置
+
+.......... 省略
+
+ENV http_proxy="" #取消代理设置
+ENV https_proxy=""#取消代理设置
+
+
+ENV SSL_CERT_DIR /etc/rancher/ssl
+VOLUME /var/lib/rancher
+
+ENTRYPOINT ["entrypoint.sh"]
+
+```
+修改ci脚本,如果想节省时间，减少test的处理，可以如下处理：
+```
+# cat scripts/ci
+#!/bin/bash
+set -x
+
+cd $(dirname $0)
+
+./validate
+./build
+#./test
+./package
+#./chart/ci
+
+```
+# 执行构建
+```
+# pwd
+/go/src/github.com/rancher/rancher
+# make 
+```
+构建生成后，会生成对应的image
+```
+# docker images
+REPOSITORY                                            TAG                 IMAGE ID            CREATED             SIZE
+rancher/rancher-agent                                 yz-v2.2.2           71796d7fb30b        5 hours ago         298MB
+rancher/rancher                                       yz-v2.2.2           f84b61b20a22        6 hours ago         472MB
+rancher                                               OZoUfGm             ca6404ddb801        6 hours ago         1.48GB
+rancher                                               build.v2.2.2        83eccea8b9ea        26 hours ago        1.41GB
+
+```
+# 启动rancher server
+```
+docker run --rm -it -p 80:80 -p 443:443 rancher/rancher:yz-v2.2.2
+```
+浏览器打开就可以看到rancher的管理页面了。
