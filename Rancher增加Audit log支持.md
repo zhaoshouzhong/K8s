@@ -5,7 +5,8 @@ rancher以helm方式部署后，默认是没有开启audit log能力的。这对
 
 https://rancher.com/docs/rancher/v2.x/en/installation/options/api-audit-log/
 
-# 开启审计日志，参考 ###部分，这些是在原有基础上增加的内容
+# 开启审计日志
+参考 ###部分，这些是在原有基础上增加的内容
 ```
 # kubectl edit deployment rancher  -n cattle-system
       containers:
