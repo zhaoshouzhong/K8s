@@ -98,5 +98,4 @@ https://rancher.com/docs/rancher/v2.x/en/installation/options/api-audit-log/
      
 ```
 然后，保持后，系统会自动新建rancher了。
-# 注意事项
-虽然启动了三个容器，但是只要一个容器有审计日志的生成，其他容器不会生成
+
