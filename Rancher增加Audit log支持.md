@@ -91,7 +91,9 @@ https://rancher.com/docs/rancher/v2.x/en/installation/options/api-audit-log/
         secret:
           defaultMode: 256
           secretName: tls-ca
-      - emptyDir: {}
+      - hostPath:
+          path: /data/rancher/auditlog
+          type: DirectoryOrCreate
         name: audit-log
      
 ```
