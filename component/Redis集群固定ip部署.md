@@ -664,3 +664,11 @@ connected
 https://rancher.com/blog/2019/deploying-redis-cluster/
 
 这种方案部署就简单多了。如果是简单测试用，可以考虑这种方式。
+
+# 主机重启验证
+我们把所在的主机进行reboot，然后验证。第一次重启可能存在pod无法启动情况，这时在主机上执行
+```
+docker container prune
+```
+然后就可以启动了，启动后，ip保持不变，检查集群状态也是正常的。
+再次reboot，一切ok了。
