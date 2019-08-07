@@ -79,7 +79,6 @@ kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: redis-pv5
-  namespace: test2
   labels:
     type: redis
 spec:
@@ -96,7 +95,6 @@ kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: redis-pv6
-  namespace: test2
   labels:
     type: redis
 spec:
@@ -476,3 +474,193 @@ spec:
           storage: 1Gi
       storageClassName: redis-test
 ```
+## 创建service
+```
+# cat svc.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster1
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    statefulset.kubernetes.io/pod-name: redis-cluster1-0
+    #app: redis-cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster2
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    statefulset.kubernetes.io/pod-name: redis-cluster2-0
+    #app: redis-cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster3
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    statefulset.kubernetes.io/pod-name: redis-cluster3-0
+    #app: redis-cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster4
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    statefulset.kubernetes.io/pod-name: redis-cluster4-0
+    #app: redis-cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster5
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    statefulset.kubernetes.io/pod-name: redis-cluster5-0
+    #app: redis-cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster6
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    statefulset.kubernetes.io/pod-name: redis-cluster6-0
+    #app: redis-cluster
+```
+# 创建redis集群
+```
+kubectl exec -it redis-cluster1-0 -- redis-cli --cluster create --cluster-replicas 1 $(kubectl get pods -l app=redis-cluster -o jsonpath='{range.items[*]}{.status.podIP}:6379 ' )
+```
+# 测试redis集群
+部署完成后，执行如下指令进行测试验证
+```
+# kubectl exec -it redis-cluster1-0 -- redis-cli cluster info
+cluster_state:ok
+cluster_slots_assigned:16384
+cluster_slots_ok:16384
+cluster_slots_pfail:0
+cluster_slots_fail:0
+cluster_known_nodes:6
+cluster_size:3
+cluster_current_epoch:7
+cluster_my_epoch:1
+cluster_stats_messages_ping_sent:42367
+cluster_stats_messages_pong_sent:42565
+cluster_stats_messages_fail_sent:10
+cluster_stats_messages_auth-ack_sent:1
+cluster_stats_messages_sent:84943
+cluster_stats_messages_ping_received:42565
+cluster_stats_messages_pong_received:42358
+cluster_stats_messages_fail_received:2
+cluster_stats_messages_auth-req_received:1
+cluster_stats_messages_received:84926
+
+# for x in $(seq 1 6); do echo "redis-cluster$x-0"; kubectl exec redis-cluster$x-0 -- redis-cli role; echo; done
+redis-cluster1-0
+master
+59262
+10.100.236.143
+6379
+59262
+
+redis-cluster2-0
+slave
+10.100.236.144
+6379
+connected
+59248
+
+redis-cluster3-0
+master
+59304
+10.100.236.145
+6379
+59304
+
+redis-cluster4-0
+slave
+10.100.236.140
+6379
+connected
+59262
+
+redis-cluster5-0
+master
+59248
+10.100.236.141
+6379
+59248
+
+redis-cluster6-0
+slave
+10.100.236.142
+6379
+connected
+59304
+```
+则表示集群正常运行了。
+
+# 非固定ip方案
+可以参考
+
+https://rancher.com/blog/2019/deploying-redis-cluster/
+
+这种方案部署就简单多了。如果是简单测试用，可以考虑这种方式。
