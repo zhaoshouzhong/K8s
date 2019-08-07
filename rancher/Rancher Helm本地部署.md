@@ -60,4 +60,46 @@ rancherImageTag: dev
 ````
 其他的参数根据需要调整
 
+# 部署helm
+```
+https://get.helm.sh/helm-v2.14.1-linux-amd64.tar.gz
+tar xvzf helm-v2.14.1-linux-amd64.tar.gz
+cd linux-amd64
+mv helm /usr/local/bin/
+
+#创建sa
+kubectl -n   kube-system create serviceaccount tiller
+
+kubectl create  clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+
+#安装socat，否则会报错
+yum install -y socat
+
+#初始化helm，指向阿里云的image和仓库，否则需要翻墙
+helm init --service-account tiller \
+--tiller-image registry.cn-shanghai.aliyuncs.com/rancher/tiller:v2.14.1 \
+--stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts \
+```
+
 # 定制生成本地helm仓库
+```
+mkdir -p /info/helm/rancher
+# 把前面解压后的rancher目录复制到该目录下
+# tree
+.
+`-- rancher
+    |-- Chart.yaml
+    |-- templates
+    |   |-- clusterRoleBinding.yaml
+    |   |-- deployment.yaml
+    |   |-- _helpers.tpl
+    |   |-- ingress.yaml
+    |   |-- issuer-letsEncrypt.yaml
+    |   |-- issuer-rancher.yaml
+    |   |-- NOTES.txt
+    |   |-- serviceAccount.yaml
+    |   `-- service.yaml
+    `-- values.yaml
+
+```
+
