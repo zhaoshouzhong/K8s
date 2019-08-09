@@ -12,16 +12,12 @@ cp  kubebox /usr/bin
 
 可以选择ns下的某个pod进行cpu，内存，网络查看，也可以看日志，打开cli命令（R 按键）
 # 自己编译打包
-安装nodejs
+安装nodejs,步骤如下：
 ```
-#下载 https://nodejs.org/en/download/ nodejs包
-# 我们使用的包为：node-v10.16.2-linux-x64.tar.xz
-xz -d node-v10.16.2-linux-x64.tar.xz
-tar xvf node-v10.16.2-linux-x64.tar
-```
-然后把nodejs的包放入path搜索路径中,编辑/etc/profile，增加如下内容:
-```
-export PATH=$PATH:/info/node-v10.16.2-linux-x64/bin
+curl --silent --location https://rpm.nodesource.com/setup_10.x | sudo bash -
+yum install nodejs -y
+curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | sudo tee /etc/yum.repos.d/yarn.repo
+yum install yarn -y
 ```
 后面我们进行代码的编译：
 ```
