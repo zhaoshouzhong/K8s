@@ -1,0 +1,28 @@
+官方长期支持的稳定内核4.14,并且携程推荐的内核版本
+https://www.cnblogs.com/cnwangshijun/p/7405153.html
+
+yum makecache
+
+yum groupinstall "Development Tools" -y  
+
+yum install -y elfutils-libelf-devel bc openssl-devel ncurses-devel wget ntpdate vim net-tools make gcc bc elfutils-libelf-devel
+ntpdate -u times.aliyun.com
+
+1：wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.123.tar.xz
+
+
+cd /opt/k8s/work/kernel4.14.123
+tar xvf linux-4.14.123.tar.xz
+cd linux-4.14.123
+cp -v   /boot/config-3.10.0-862.el7.x86_64 .config
+
+sh -c 'yes "" | make oldconfig' 
+make -j 30 bzImage  
+make -j 30 modules  
+make -j 30 modules_install 
+make install 
+
+
+awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
+
+grub2-set-default 1 && init 6
