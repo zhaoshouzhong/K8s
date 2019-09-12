@@ -1,0 +1,40 @@
+架构：
+通过haproxy+keepalived 提供vip ，harbor通过vip对外提供服务,后面有两个harbor，位于25,26主机
+frontend harbor-http
+  bind 0.0.0.0:8500
+  mode tcp
+  #maxconn 50000
+  default_backend harbor-http-backend
+
+backend harbor-http-backend
+  mode tcp
+  balance source
+  server lab1 172.xx.xx.25:7080 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3
+  server lab2 172.xx.xx.26:7080 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3
+
+由于是生产环境，对外仅开放8500端口对外提供服务。
+
+docker login 出现如下错误：
+docker login xxxx:8500
+Username: admin
+Password:
+Error response from daemon: Get http://registry-release.yingzi.com:8500/v2/: Get http://172.xx.xx.26:7080/service/token?account=admin&client_id=docker&offline_token=true&service=harbor-registry: dial tcp 172.xx.xx.26:7080: connect: connection timed out
+
+但是可以通过portal登陆。
+进行网络抓包，发现 显示：authentication required
+
+解决方法：vi common/config/registry/config.yml
+修改 realm: http://vip:8500/service/token
+改为vip即可。
+然后重启harbor ，docker-compose stop && docker-compose up -d
+
+这时就正常了
+根本原因：client端和harbor通信时，需要进行鉴权认定，这个地址就在  common/config/registry/config.yml 定义。生产环境，网络隔离，无法直接访问，就会报错。
+
+ common/config/registry/config.yml 授权片段：
+auth:
+  token:
+    issuer: harbor-token-issuer
+    realm: http://vip:8500/service/token
+    rootcertbundle: /etc/registry/root.crt
+    service: harbor-registry
