@@ -1,0 +1,5 @@
+在viitualbox 界面增加桥接模式时，界面部分如果为空的话，表示桥接的驱动没有按照，参考如下安装：
+https://blog.csdn.net/qq_383698639/article/details/79527311
+
+驱动位于
+virtaulbox安装目录\drivers\network\netlwf 目录下
