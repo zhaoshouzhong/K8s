@@ -1,0 +1,5 @@
+VBoxManage bandwidthctl "buildServer" add Limit --type disk --limit 20M
+VBoxManage storageattach "buildServer" --storagectl "SATA" --port 2 --device 0 --type hdd  --medium d:\vdisk\calico-02.vdi --bandwidthgroup Limit
+VBoxManage storageattach "buildServer" --storagectl "SATA" --port 1 --device 0 --type hdd --medium d:\vdisk\build2.vdi --bandwidthgroup Limit
+
+参考https://docs.oracle.com/cd/E97728_01/E97727/html/storage-bandwidth-limit.html
