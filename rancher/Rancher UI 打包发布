@@ -1,0 +1,59 @@
+定制UI后，有两种方式使用新的UI：
+1：把UI包更新到rancher image中
+2：把UI打包到单独的image中。
+下面分别介绍这两种方式
+
+1： rancher UI代码编译：
+
+执行 ./scripts/build-static -s -f
+进行代码编译，编译时，一些选型需要注意：TEST = 0 忽略自动化测试；UPLOAD = 0 不需要上传包
+PKG_VERSION=$(cat package.json | grep version | head -n 1 | cut -f4 -d'"')
+FORCE=0
+LATEST=0
+MODE=""
+UPLOAD=0
+TAG=0
+TEST=0
+ENVIRONMENT="production"
+FINGERPRINT="yes"
+
+定制 Dockerfile
+cd dockerfile/
+创建如下dockerfile
+FROM rancher/rancher:v2.2.2
+
+RUN rm -rf /usr/share/rancher/ui/*
+COPY ui.tar.gz /usr/share/rancher/ui/2.2.41.tar.gz
+RUN cd /usr/share/rancher/ui/ && tar xvzf 2.2.41.tar.gz --strip-components=1 && rm -rf /usr/share/rancher/ui/2.2.41.tar.gz
+
+ENTRYPOINT ["entrypoint.sh"]
+然后生成对应的image
+
+2：把UI打包到单独的image中
+修改Dockerfile增加proxy设置
+ENV http_proxy="http://172.19.68.52:1080"
+ENV https_proxy="http://172.19.68.52:1080"
+
+.....
+EXPOSE 8000
+EXPOSE 7020
+ENV http_proxy=""
+ENV https_proxy=""
+文件最后取消proxy
+
+定义.yarnnc文件
+egistry "https://registry.npm.taobao.org"
+
+sass_binary_site "https://npm.taobao.org/mirrors/node-sass/"
+phantomjs_cdnurl "http://cnpmjs.org/downloads"
+electron_mirror "https://npm.taobao.org/mirrors/electron/"
+sqlite3_binary_host_mirror "https://foxgis.oss-cn-shanghai.aliyuncs.com/"
+profiler_binary_host_mirror "https://npm.taobao.org/mirrors/node-inspector/"
+chromedriver_cdnurl "https://cdn.npm.taobao.org/dist/chromedriver"
+
+修改package.json 。修改start部分：node --max-old-space-size=3072 ./node_modules/.bin/ember server 
+
+修改config/enviroment.js . 修改 apiServer:时间的rancher url
+build image
+
+docker run --rm -it -p 8000:8000 -p 7020:7020 xxxxx 启动测试验证
