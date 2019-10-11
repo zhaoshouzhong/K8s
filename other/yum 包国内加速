@@ -1,0 +1,6 @@
+参考：https://blog.csdn.net/luChenH/article/details/90668131
+
+执行：
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-6.repo
+
+速度马上快起来！
