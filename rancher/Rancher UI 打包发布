@@ -1,7 +1,21 @@
+环境初始化：
+github:
+https://github.com/rancher/ui
+需要部署的组件：nodejs，这里部署10版本：参考：
+https://linuxize.com/post/how-to-install-node-js-on-centos-7/
+部署成功后：
+# node --version
+v10.17.0
+# npm --version
+6.11.3
+
+
 定制UI后，有两种方式使用新的UI：
 1：把UI包更新到rancher image中
 2：把UI打包到单独的image中。
 下面分别介绍这两种方式
+
+部署yarn：参考官方文档安装即可
 
 1： rancher UI代码编译：
 
