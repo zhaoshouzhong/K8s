@@ -103,3 +103,5 @@ tar --numeric-owner --exclude='dev/*' -c -C "$tmp" . | gzip -9n > "$outfile"
 ./mkimage.sh --arch x86_64 --hostkeys --profile minirootfs --outdir outdir --workdir workdir --repository http://dl-cdn.alpinelinux.org/alpine/v3.9/main
 
 11：outdir 目录下就可以看到对应的包了
+
+参考：https://lists.sr.ht/~sircmpwn/alpine-devel/%3C64c0f770-c27c-70f9-3518-ceb07576c21f%40linux.ibm.com%3E
