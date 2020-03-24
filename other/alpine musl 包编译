@@ -1,0 +1,60 @@
+1：先按照 步骤制作环境
+2：cd /home/myuser/aports/main/musl
+vi  APKBUILD
+可以看到：
+pkgver=1.1.24
+
+apk info -a  musl,查看当前musl的包信息，发现当前版本是：1.1.24
+musl-1.1.24-r2 contains:
+lib/libc.musl-x86_64.so.1
+lib/ld-musl-x86_64.so.1
+这个包和我们前的alpine自带的吻合
+
+生成补丁，用来去掉AAAA请求：
+cat ipv4.patch 
+diff --git a/src/network/lookup_name.c b/src/network/lookup_name.c
+index ae0ab1c5..ad4ea3ss 100655
+--- a/src/network/lookup_name.c
++++ b/src/network/lookup_name.c
+@@ -155,6 +155,9 @@
+ 				return EAI_NONAME;
+ 			nq++;
+ 		}
++              
++                //hack: if set the AF_UNSPEC family, just return ipv4 result
++                if (family == AF_UNSPEC) break;
+ 	}
+ 
+ 	if (__res_msend_rc(nq, qp, qlens, ap, alens, sizeof *abuf, conf) < 0)
+abuild checksum
+abuild unpack
+abuild prepare  打补丁
+打上补丁后，vi src/musl-1.1.24/src/network/lookup_name.c ，可以看到：
+static int name_from_dns(struct address buf[static MAXADDRS], char canon[static 256], const char *name, int family, const struct resolvconf *conf)
+{                                                                                                                                                 
+        unsigned char qbuf[2][280], abuf[2][512];                                                                                                 
+        const unsigned char *qp[2] = { qbuf[0], qbuf[1] };                                                                                        
+        unsigned char *ap[2] = { abuf[0], abuf[1] };                                                                                              
+        int qlens[2], alens[2];                           
+        int i, nq = 0;                                    
+        struct dpc_ctx ctx = { .addrs = buf, .canon = canon };
+        static const struct { int af; int rr; } afrr[2] = {               
+                { .af = AF_INET6, .rr = RR_A },               
+                { .af = AF_INET, .rr = RR_AAAA },             
+        };                                                    
+       for (i=0; i<2; i++) {                    
+                if (family != afrr[i].af) {      
+                        qlens[nq] = __res_mkquery(0, name, 1, afrr[i].rr,       
+                                0, 0, 0, qbuf[nq], sizeof *qbuf);                
+                        if (qlens[nq] == -1)                             
+                                return EAI_NONAME;                                           
+                        nq++;                                            
+                }                                                                               
+                                                    
+                //hack: if set the AF_UNSPEC family, just return ipv4 result。这个地方是关键点
+                if (family == AF_UNSPEC) break;                             
+        }        
+abuild -r
+
+构建成功后，/lib/libc.musl-x86_64.so.1 会更新为最新的包
+参考：https://wiki.alpinelinux.org/wiki/Abuild_and_Helpers
