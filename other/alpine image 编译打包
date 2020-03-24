@@ -1,0 +1,105 @@
+alpine:3.9 的dockerfile：
+
+FROM scratch
+ADD alpine-minirootfs-3.9.5-x86_64.tar.gz /
+CMD ["/bin/sh"]
+
+alpine-minirootfs-3.9.5-x86_64.tar.gz 可以在如下找到：
+http://dl-cdn.alpinelinux.org/alpine/v3.9/releases/x86_64/
+那么，alpine-minirootfs-3.9.5-x86_64.tar.gz 是如何编译出来的？
+
+1：docker run -it alpine:3.9 /bin/sh ，启动一个容器
+2：增加依赖包：
+apk add alpine-sdk
+3：创建用户和用户组
+adduser myuser
+addgroup myuser abuild
+4：设置sudo 权限
+visudo 
+myuser ALL=(ALL) ALL
+保存
+5：切换新用户：
+以新用户登录：
+login myuser
+6：生成key：
+abuild-keygen -a
+7：copy key
+ copy your pub key in ~/.abuild/ to /etc/apk/keys/
+ sudo chown myuser:myuser /etc/apk/keys/myuser-*
+8：clone aports包：
+###clone包，或者选择特定版本：--single-branch --branch 3.9-stable
+git clone   git://git.alpinelinux.org/aports 
+clone完成后，进入aports目录下scripts目录下
+9：修改打包脚本：
+cat genrootfs.sh 
+#!/bin/sh -ex
+
+cleanup() {
+	rm -rf "$tmp"
+}
+
+tmp="$(mktemp -d)"
+trap cleanup EXIT
+
+arch="$(apk --print-arch)"
+repositories_file=/etc/apk/repositories
+keys_dir=/etc/apk/keys
+
+while getopts "a:r:k:o:" opt; do
+	case $opt in
+	a) arch="$OPTARG";;
+	r) repositories_file="$OPTARG";;
+	k) keys_dir="$OPTARG";;
+	o) outfile="$OPTARG";;
+	esac
+done
+shift $(( $OPTIND - 1))
+pwd
+repositories_file=../$repositories_file
+keys_dir=../$keys_dir                                         
+                                                              
+tmp=../tmp 
+
+cat "$repositories_file"
+
+if [ -z "$outfile" ]; then
+	outfile=$name-$arch.tar.gz
+fi
+
+${APK:-apk} add --keys-dir "$keys_dir" --no-cache \
+	--repositories-file "$repositories_file" \
+	--no-script --root "$tmp" --initdb \
+	"$@"
+for link in $("$tmp"/bin/busybox --list-full); do
+	[ -e "$tmp"/$link ] || ln -s /bin/busybox "$tmp"/$link
+done
+
+
+#${APK:-apk} fetch --keys-dir "$keys_dir" --no-cache \
+	#--repositories-file "$repositories_file" \
+	#--stdout --quiet alpine-base | tar -zx -C "$tmp" etc/
+
+${APK:-apk} fetch --stdout --quiet alpine-base | tar -zx -C "$tmp" etc/ 
+
+# make sure root login is disabled
+sed -i -e 's/^root::/root:!:/' "$tmp"/etc/shadow
+
+branch=edge
+VERSION_ID=$(awk -F= '$1=="VERSION_ID" {print $2}'  "$tmp"/etc/os-release)
+case $VERSION_ID in
+*_alpha*|*_beta*) branch=edge;;
+*.*.*) branch=v${VERSION_ID%.*};;
+esac
+
+cat > "$tmp"/etc/apk/repositories <<EOF
+http://dl-cdn.alpinelinux.org/alpine/$branch/main
+http://dl-cdn.alpinelinux.org/alpine/$branch/community
+EOF
+
+tar --numeric-owner --exclude='dev/*' -c -C "$tmp" . | gzip -9n > "$outfile"
+
+备注：原有的脚本生成image时有问题，因此上面的脚本是修改后的内容
+10：生成包：
+./mkimage.sh --arch x86_64 --hostkeys --profile minirootfs --outdir outdir --workdir workdir --repository http://dl-cdn.alpinelinux.org/alpine/v3.9/main
+
+11：outdir 目录下就可以看到对应的包了
