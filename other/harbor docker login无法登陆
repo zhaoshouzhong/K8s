@@ -18,7 +18,7 @@ docker login 出现如下错误：
 docker login xxxx:8500
 Username: admin
 Password:
-Error response from daemon: Get http://registry-release.yingzi.com:8500/v2/: Get http://172.xx.xx.26:7080/service/token?account=admin&client_id=docker&offline_token=true&service=harbor-registry: dial tcp 172.xx.xx.26:7080: connect: connection timed out
+Error response from daemon: Get http://registry-release.xxx.com:8500/v2/: Get http://172.xx.xx.26:7080/service/token?account=admin&client_id=docker&offline_token=true&service=harbor-registry: dial tcp 172.xx.xx.26:7080: connect: connection timed out
 
 但是可以通过portal登陆。
 进行网络抓包，发现 显示：authentication required
