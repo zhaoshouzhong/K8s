@@ -1,3 +1,5 @@
+有两种升级方式：
+方式一：这种方式保持原有的kernel启动配置，会生成一个新的kernel配置。但是/boot 目录下没有生成对应的config文件，/usr/src/kernel目录下也没有对应的header文件。这会导致某些应用源码编译时可能出错。
 官方长期支持的稳定内核4.14,并且携程推荐的内核版本
 https://www.cnblogs.com/cnwangshijun/p/7405153.html
 
@@ -26,3 +28,21 @@ make install
 awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
 
 grub2-set-default 1 && init 6
+
+方式二：编程rpm包，这种方式比较贴近yum kernel升级方式，但是不保留原kernel 版本。
+参考：https://linuxhint.com/compile-linux-kernel-centos7/
+1：wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.123.tar.xz
+
+
+cd /opt/k8s/work/kernel4.14.123
+tar xvf linux-4.14.123.tar.xz
+cd linux-4.14.123
+cp -v   /boot/config-3.10.0-862.el7.x86_64 .config
+
+sh -c 'yes "" | make oldconfig' 
+make rpm-pkg
+编译成功后，文件生成到/root/rpmbuild/RPMS/x86_64/目录下
+yum localinstall /root/rpmbuild/RPMS/x86_64/kernel*.rpm
+reboot就可以了
+
+
