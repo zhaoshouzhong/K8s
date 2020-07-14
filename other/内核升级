@@ -29,7 +29,8 @@ awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
 
 grub2-set-default 1 && init 6
 
-方式二：编程rpm包，这种方式比较贴近yum kernel升级方式。推荐的方式
+方式二：编程rpm包，这种方式比较贴近yum kernel升级方式。可以生成/usr/src/kernel，但是无法生成config文件。
+ 如果要生成config文件，可以手工复制，或者直接在4.14.内核中yum localinstall kernel-4.14.187-1.x86_64.rpm,然后重启就行。不过这种方式会冲掉原因的kernel配置，不建议。
 参考：https://linuxhint.com/compile-linux-kernel-centos7/
 1：wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.123.tar.xz
 
