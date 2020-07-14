@@ -29,7 +29,7 @@ awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
 
 grub2-set-default 1 && init 6
 
-方式二：编程rpm包，这种方式比较贴近yum kernel升级方式，但是不保留原kernel 版本。
+方式二：编程rpm包，这种方式比较贴近yum kernel升级方式。推荐的方式
 参考：https://linuxhint.com/compile-linux-kernel-centos7/
 1：wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.123.tar.xz
 
